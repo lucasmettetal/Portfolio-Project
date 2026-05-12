@@ -103,8 +103,8 @@ This document outlines the high-level plan for the development of an **E-Commerc
 
 | Member | Role |
 |--------|------|
-| Lucas Mettal | Full-Stack Developer |
-| Teammate | Full-Stack Developer |
+| Lucas Mettetal | Full-Stack Developer |
+| Julien Hinlang | Full-Stack Developer |
 
 ---
 
