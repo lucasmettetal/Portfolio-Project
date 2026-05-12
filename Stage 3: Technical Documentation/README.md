@@ -258,4 +258,4 @@ Frontend → Customer: Redirect to homepage (authenticated)
 
 ---
 
-*Document produced by Lucas Mettal and Teammate — Holberton Toulouse, Stage 3.*
+*Document produced by Lucas Mettal and Julien Hinlang — Holberton Toulouse, Stage 3.*
