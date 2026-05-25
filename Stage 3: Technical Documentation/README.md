@@ -30,7 +30,7 @@
 
 ### Mockups
 Mockups cover the following main screens: Home / Product listing page, Product detail page, Shopping cart, Checkout form, and Order confirmation.
-*(Mockups to be created in Figma and linked here.)*
+*(Mockups to be created in Figma and [here](https://www.figma.com/make/JfqHiZO5yiv7yXjKSzJ1QJ/E-commerce-Platform-UI-UX-Mockup?t=71piz1L9V7iX2WYE-20&fullscreen=1.) )*
 
 ---
 
