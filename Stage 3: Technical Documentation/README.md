@@ -38,22 +38,13 @@ Mockups cover the following main screens: Home / Product listing page, Product d
 
 ### High-Level Architecture
 
-```
-[ Client (Browser) ]
-        |
-        | HTTP/HTTPS
-        v
-[ React + Tailwind CSS Frontend ]
-        |
-        | REST API calls (JSON)
-        v
-[ Node.js + Express Backend ]
-        |         |
-        |         v
-        |   [ MongoDB Database ]
-        |
-        v
-[ External APIs (optional: email service) ]
+
+```mermaid
+graph TD
+    A[Client Browser] -->|HTTP/HTTPS| B[React + Tailwind CSS Frontend]
+    B -->|REST API JSON| C[Node.js + Express Backend]
+    C --> D[MongoDB Database]
+    C --> E[External APIs / Email Service]
 ```
 
 ### Data Flow
@@ -66,99 +57,112 @@ Mockups cover the following main screens: Home / Product listing page, Product d
 
 ## 3. Components, Classes, and Database Design
 
-### Backend Classes
+```mermaid
+classDiagram
 
-#### Product
-- `_id`: ObjectId
-- `name`: String (required)
-- `description`: String
-- `price`: Number (required)
-- `category`: String (e.g., "clothing", "chairs", "decorative")
-- `images`: [String] (URLs)
-- `stock`: Number
-- `createdAt`: Date
+class User {
+    +ObjectId _id
+    +String name
+    +String email
+    +String password
+    +String role
+    +Date createdAt
+}
 
-#### User
-- `_id`: ObjectId
-- `name`: String (required)
-- `email`: String (required, unique)
-- `password`: String (hashed, required)
-- `role`: String ("customer" | "admin")
-- `createdAt`: Date
+class Product {
+    +ObjectId _id
+    +String name
+    +String description
+    +Number price
+    +String category
+    +String[] images
+    +Number stock
+    +Date createdAt
+}
 
-#### Cart
-- `_id`: ObjectId
-- `userId`: ObjectId (ref: User)
-- `items`: [{ productId: ObjectId, quantity: Number }]
-- `updatedAt`: Date
+class Cart {
+    +ObjectId _id
+    +ObjectId userId
+    +Array items
+    +Date updatedAt
+}
 
-#### Order
-- `_id`: ObjectId
-- `userId`: ObjectId (ref: User)
-- `items`: [{ productId: ObjectId, quantity: Number, price: Number }]
-- `totalAmount`: Number
-- `status`: String ("pending" | "confirmed" | "shipped" | "delivered")
-- `shippingAddress`: { street, city, zip, country }
-- `createdAt`: Date
+class Order {
+    +ObjectId _id
+    +ObjectId userId
+    +Array items
+    +Number totalAmount
+    +String status
+    +Object shippingAddress
+    +Date createdAt
+}
 
-### Database: MongoDB Collections
-- **products** — catalog of all items
-- **users** — registered customers and admins
-- **carts** — one cart per user (upsert on update)
-- **orders** — history of placed orders
-
-### Frontend Components (React)
-- `Navbar` — navigation, cart icon with item count
-- `ProductList` — grid of ProductCard components
-- `ProductCard` — image, name, price, "Add to cart" button
-- `ProductDetail` — full product view with quantity selector
-- `Cart` — list of cart items, totals, checkout button
-- `CheckoutForm` — shipping address and order confirmation
-- `AuthForms` — Login / Register forms
-
----
+User "1" --> "1" Cart : has
+User "1" --> "0..*" Order : places
+Cart "1" --> "0..*" Product : contains
+Order "1" --> "0..*" Product : includes
+```
 
 ## 4. High-Level Sequence Diagrams
 
 ### Scenario 1: Customer browses and adds a product to cart
 
-```
-Customer → Frontend: Visit /products
-Frontend → Backend: GET /api/products
-Backend → MongoDB: db.products.find()
-MongoDB → Backend: products[]
-Backend → Frontend: 200 OK { products[] }
-Frontend → Customer: Display product grid
+```mermaid
+sequenceDiagram
+    participant C as Customer
+    participant F as Frontend
+    participant B as Backend
+    participant M as MongoDB
 
-Customer → Frontend: Click "Add to Cart"
-Frontend → Backend: POST /api/cart { productId, quantity }
-Backend → MongoDB: db.carts.updateOne(...)
-Backend → Frontend: 200 OK { cart }
-Frontend → Customer: Cart icon updated
+    C->>F: Visit /products
+    F->>B: GET /api/products
+    B->>M: db.products.find()
+    M-->>B: products[]
+    B-->>F: 200 OK { products[] }
+    F-->>C: Display product grid
+
+    C->>F: Click Add to Cart
+    F->>B: POST /api/cart
+    B->>M: db.carts.updateOne()
+    M-->>B: OK
+    B-->>F: 200 OK { cart }
+    F-->>C: Cart updated
 ```
 
 ### Scenario 2: Customer places an order
 
-```
-Customer → Frontend: Click "Checkout"
-Frontend → Backend: POST /api/orders { items[], shippingAddress }
-Backend → MongoDB: db.orders.insertOne(...)
-Backend → MongoDB: db.carts.deleteOne(userId)
-MongoDB → Backend: OK
-Backend → Frontend: 201 Created { orderId }
-Frontend → Customer: Order confirmation page
+```mermaid
+sequenceDiagram
+    participant C as Customer
+    participant F as Frontend
+    participant B as Backend
+    participant M as MongoDB
+
+    C->>F: Click Checkout
+    F->>B: POST /api/orders
+    B->>M: db.orders.insertOne()
+    B->>M: db.carts.deleteOne()
+    M-->>B: OK
+    B-->>F: 201 Created { orderId }
+    F-->>C: Order confirmation page
 ```
 
 ### Scenario 3: User logs in
 
-```
-Customer → Frontend: Submit login form (email, password)
-Frontend → Backend: POST /api/auth/login { email, password }
-Backend → MongoDB: db.users.findOne({ email })
-MongoDB → Backend: user document
-Backend → Backend: bcrypt.compare(password, user.password)
-Backend → Frontend: 200 OK { token (JWT) }
-Frontend → Customer: Redirect to homepage (authenticated)
+```mermaid
+sequenceDiagram
+    participant C as Customer
+    participant F as Frontend
+    participant B as Backend
+    participant M as MongoDB
+
+    C->>F: Submit login form
+    F->>B: POST /api/auth/login
+    B->>M: db.users.findOne()
+    M-->>B: user document
+    B->>B: bcrypt.compare()
+    B-->>F: 200 OK JWT Token
+    F-->>C: Redirect to homepage
 ```
 
 ---
