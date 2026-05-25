@@ -30,7 +30,7 @@
 
 ### Mockups
 Mockups cover the following main screens: Home / Product listing page, Product detail page, Shopping cart, Checkout form, and Order confirmation.
-*(Mockups to be created in Figma and [here](https://www.figma.com/make/JfqHiZO5yiv7yXjKSzJ1QJ/E-commerce-Platform-UI-UX-Mockup?t=71piz1L9V7iX2WYE-20&fullscreen=1.) )*
+*(Mockups to be created in Figma and linked here.)*
 
 ---
 
@@ -38,12 +38,22 @@ Mockups cover the following main screens: Home / Product listing page, Product d
 
 ### High-Level Architecture
 
-```mermaid
-graph TD
-    A[Client Browser] -->|HTTP/HTTPS| B[React + Tailwind CSS Frontend]
-    B -->|REST API JSON| C[Node.js + Express Backend]
-    C --> D[MongoDB Database]
-    C --> E[External APIs / Email Service]
+```
+[ Client (Browser) ]
+        |
+        | HTTP/HTTPS
+        v
+[ React + Tailwind CSS Frontend ]
+        |
+        | REST API calls (JSON)
+        v
+[ Node.js + Express Backend ]
+        |         |
+        |         v
+        |   [ MongoDB Database ]
+        |
+        v
+[ External APIs (optional: email service) ]
 ```
 
 ### Data Flow
@@ -248,4 +258,4 @@ Frontend → Customer: Redirect to homepage (authenticated)
 
 ---
 
-*Document produced by Lucas Mettal and Julien Hinlang — Holberton Toulouse, Stage 3.*
+*Document produced by Lucas Mettal and Teammate — Holberton Toulouse, Stage 3.*
