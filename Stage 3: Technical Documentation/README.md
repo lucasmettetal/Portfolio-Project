@@ -38,22 +38,12 @@ Mockups cover the following main screens: Home / Product listing page, Product d
 
 ### High-Level Architecture
 
-```
-[ Client (Browser) ]
-        |
-        | HTTP/HTTPS
-        v
-[ React + Tailwind CSS Frontend ]
-        |
-        | REST API calls (JSON)
-        v
-[ Node.js + Express Backend ]
-        |         |
-        |         v
-        |   [ MongoDB Database ]
-        |
-        v
-[ External APIs (optional: email service) ]
+```mermaid
+graph TD
+    A[Client Browser] -->|HTTP/HTTPS| B[React + Tailwind CSS Frontend]
+    B -->|REST API JSON| C[Node.js + Express Backend]
+    C --> D[MongoDB Database]
+    C --> E[External APIs / Email Service]
 ```
 
 ### Data Flow
