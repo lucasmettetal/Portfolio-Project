@@ -1,35 +1,12 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { requireAuth, optionalAuth } from '../middleware/auth.js';
+import { generateRef, orderToJSON } from '../lib/utils.js';
+import { sendOrderConfirmation } from '../lib/mailer.js';
 
 const router = Router();
 
 const VALID_STATUSES = ['nouveau', 'en cours', 'livré', 'annulé'];
-
-function generateRef() {
-  const n = Math.floor(Math.random() * 90000) + 10000;
-  return `R25-${n}`;
-}
-
-function toJSON(o) {
-  return {
-    id: o.id,
-    reference: o.reference,
-    status: o.status,
-    total: o.total,
-    customer_name: o.customerName,
-    email: o.customerEmail,
-    created_at: o.createdAt,
-    updated_at: o.updatedAt,
-    items: (o.items || []).map(i => ({
-      id: i.id,
-      name: i.name,
-      price: i.price,
-      size: i.size,
-      quantity: i.quantity,
-    })),
-  };
-}
 
 // ── Public — place an order ─────────────────────────────────────────────────
 
@@ -39,13 +16,16 @@ router.post('/', optionalAuth, async (req, res) => {
     return res.status(400).json({ error: 'Données de commande incomplètes' });
   }
   try {
+    const productIds = items.map(i => Number(i.product_id));
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+    });
+    const byId = Object.fromEntries(products.map(p => [p.id, p]));
+
     let total = 0;
     const orderItems = [];
-
     for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: Number(item.product_id) },
-      });
+      const product = byId[Number(item.product_id)];
       if (!product) throw new Error(`Produit ${item.product_id} introuvable`);
       if (!product.inStock) throw new Error(`${product.name} est épuisé`);
       total += Number(product.price) * item.quantity;
@@ -70,7 +50,15 @@ router.post('/', optionalAuth, async (req, res) => {
       include: { items: true },
     });
 
-    res.status(201).json({ order: toJSON(order), reference: order.reference });
+    sendOrderConfirmation({
+      to: email,
+      name: customer_name,
+      reference: order.reference,
+      items: order.items,
+      total: order.total,
+    });
+
+    res.status(201).json({ order: orderToJSON(order), reference: order.reference });
   } catch (err) {
     console.error(err);
     res.status(400).json({ error: err.message });
@@ -102,7 +90,7 @@ router.get('/', requireAuth, async (req, res) => {
       include: { items: true },
       orderBy: { createdAt: 'desc' },
     });
-    res.json(orders.map(toJSON));
+    res.json(orders.map(orderToJSON));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -120,7 +108,7 @@ router.patch('/:id/status', requireAuth, async (req, res) => {
       data: { status },
       include: { items: true },
     });
-    res.json(toJSON(order));
+    res.json(orderToJSON(order));
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ error: 'Commande introuvable' });
     res.status(500).json({ error: 'Erreur serveur' });

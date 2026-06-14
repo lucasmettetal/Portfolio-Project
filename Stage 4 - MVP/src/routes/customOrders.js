@@ -1,14 +1,12 @@
 import { Router } from 'express';
 import prisma from '../lib/prisma.js';
 import { requireAuth } from '../middleware/auth.js';
+import { generateRef } from '../lib/utils.js';
+import { sendCustomOrderConfirmation } from '../lib/mailer.js';
 
 const router = Router();
 
 const VALID_STATUSES = ['nouveau', 'en étude', 'devis envoyé', 'accepté', 'en création', 'terminé', 'annulé'];
-
-function generateRef() {
-  return `SM-${Math.floor(Math.random() * 90000) + 10000}`;
-}
 
 function toJSON(c) {
   return {
@@ -44,7 +42,7 @@ router.post('/', async (req, res) => {
   try {
     const order = await prisma.customOrder.create({
       data: {
-        reference: generateRef(),
+        reference: generateRef('SM'),
         name,
         email,
         phone: phone || null,
@@ -61,6 +59,14 @@ router.post('/', async (req, res) => {
         notes: notes || null,
       },
     });
+
+    sendCustomOrderConfirmation({
+      to: email,
+      name,
+      reference: order.reference,
+      garmentType: garment_type,
+    });
+
     res.status(201).json({ reference: order.reference, id: order.id });
   } catch (err) {
     console.error(err);

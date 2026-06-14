@@ -1,10 +1,19 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 import prisma from '../lib/prisma.js';
 import { requireCustomer } from '../middleware/auth.js';
 
 const router = Router();
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de tentatives, réessayez dans 15 minutes' },
+});
 
 function signToken(payload) {
   return jwt.sign(payload, process.env.JWT_SECRET, {
@@ -14,7 +23,7 @@ function signToken(payload) {
 
 // ── Admin login ──────────────────────────────────────────────────────────────
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
   try {
@@ -31,7 +40,7 @@ router.post('/login', async (req, res) => {
 
 // ── Customer register ────────────────────────────────────────────────────────
 
-router.post('/register', async (req, res) => {
+router.post('/register', loginLimiter, async (req, res) => {
   const { email, password, firstName, lastName } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
   if (password.length < 8) return res.status(400).json({ error: 'Mot de passe trop court (8 caractères minimum)' });
@@ -55,7 +64,7 @@ router.post('/register', async (req, res) => {
 
 // ── Customer login ───────────────────────────────────────────────────────────
 
-router.post('/customer/login', async (req, res) => {
+router.post('/customer/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
   try {

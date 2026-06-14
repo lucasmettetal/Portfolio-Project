@@ -2,6 +2,8 @@ import { Router } from 'express';
 import Stripe from 'stripe';
 import prisma from '../lib/prisma.js';
 import { optionalAuth } from '../middleware/auth.js';
+import { generateRef, orderToJSON } from '../lib/utils.js';
+import { sendOrderConfirmation } from '../lib/mailer.js';
 
 const router = Router();
 
@@ -10,23 +12,30 @@ function getStripe() {
   return new Stripe(process.env.STRIPE_SECRET_KEY);
 }
 
-function generateRef() {
-  return `R25-${Math.floor(Math.random() * 90000) + 10000}`;
+function stripeRefFromSession(sessionId) {
+  return `R25-S${sessionId.slice(-6).toUpperCase()}`;
 }
 
-function orderToJSON(o) {
-  return {
-    id: o.id,
-    reference: o.reference,
-    status: o.status,
-    total: o.total,
-    customer_name: o.customerName,
-    email: o.customerEmail,
-    created_at: o.createdAt,
-    items: (o.items || []).map(i => ({
-      id: i.id, name: i.name, price: i.price, size: i.size, quantity: i.quantity,
-    })),
-  };
+async function buildOrderItems(items) {
+  const productIds = items.map(i => Number(i.product_id));
+  const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+  const byId = Object.fromEntries(products.map(p => [p.id, p]));
+
+  let total = 0;
+  const orderItems = [];
+  for (const item of items) {
+    const product = byId[Number(item.product_id)];
+    if (!product) continue;
+    total += Number(product.price) * item.quantity;
+    orderItems.push({
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      size: item.size || null,
+      quantity: item.quantity,
+    });
+  }
+  return { total, orderItems };
 }
 
 // POST /api/stripe/checkout — crée une session Stripe Checkout
@@ -42,9 +51,13 @@ router.post('/checkout', optionalAuth, async (req, res) => {
   }
 
   try {
+    const productIds = items.map(i => Number(i.product_id));
+    const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+    const byId = Object.fromEntries(products.map(p => [p.id, p]));
+
     const lineItems = [];
     for (const item of items) {
-      const product = await prisma.product.findUnique({ where: { id: Number(item.product_id) } });
+      const product = byId[Number(item.product_id)];
       if (!product) throw new Error(`Produit ${item.product_id} introuvable`);
       if (!product.inStock) throw new Error(`${product.name} est épuisé`);
       lineItems.push({
@@ -83,42 +96,30 @@ router.post('/checkout', optionalAuth, async (req, res) => {
   }
 });
 
-// GET /api/stripe/verify/:sessionId — vérifie le paiement et crée la commande
+// GET /api/stripe/verify/:sessionId — confirmation côté client (fallback si webhook en retard)
 router.get('/verify/:sessionId', async (req, res) => {
   const stripe = getStripe();
   if (!stripe) return res.status(503).json({ error: 'Stripe non configuré' });
 
   try {
     const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
-
     if (session.payment_status !== 'paid') {
       return res.status(400).json({ error: 'Paiement non confirmé' });
     }
 
-    const stripeRef = `R25-S${req.params.sessionId.slice(-6).toUpperCase()}`;
+    const stripeRef = stripeRefFromSession(req.params.sessionId);
+
+    // Commande déjà créée par le webhook — on la retourne simplement
     const existing = await prisma.order.findFirst({
       where: { reference: stripeRef },
       include: { items: true },
     });
     if (existing) return res.json({ order: orderToJSON(existing), reference: existing.reference });
 
+    // Fallback : le webhook n'a pas encore tiré, on crée la commande ici
     const { customer_name, email, items: itemsJson, user_id } = session.metadata;
     const items = JSON.parse(itemsJson);
-
-    let total = 0;
-    const orderItems = [];
-    for (const item of items) {
-      const product = await prisma.product.findUnique({ where: { id: Number(item.product_id) } });
-      if (!product) continue;
-      total += Number(product.price) * item.quantity;
-      orderItems.push({
-        productId: product.id,
-        name: product.name,
-        price: product.price,
-        size: item.size || null,
-        quantity: item.quantity,
-      });
-    }
+    const { total, orderItems } = await buildOrderItems(items);
 
     const order = await prisma.order.create({
       data: {
@@ -133,6 +134,14 @@ router.get('/verify/:sessionId', async (req, res) => {
       include: { items: true },
     });
 
+    sendOrderConfirmation({
+      to: email,
+      name: customer_name,
+      reference: order.reference,
+      items: order.items,
+      total: order.total,
+    });
+
     res.json({ order: orderToJSON(order), reference: order.reference });
   } catch (err) {
     console.error(err);
@@ -141,3 +150,56 @@ router.get('/verify/:sessionId', async (req, res) => {
 });
 
 export default router;
+
+// ── Webhook Stripe (monté avant express.json dans index.js) ──────────────────
+export async function stripeWebhook(req, res) {
+  const stripe = getStripe();
+  if (!stripe) return res.status(503).json({ error: 'Stripe non configuré' });
+
+  const sig = req.headers['stripe-signature'];
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) return res.status(503).json({ error: 'STRIPE_WEBHOOK_SECRET manquant' });
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, secret);
+  } catch (err) {
+    return res.status(400).json({ error: `Signature invalide : ${err.message}` });
+  }
+
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    if (session.payment_status !== 'paid') return res.json({ received: true });
+
+    const stripeRef = stripeRefFromSession(session.id);
+    const exists = await prisma.order.findFirst({ where: { reference: stripeRef } });
+    if (exists) return res.json({ received: true });
+
+    const { customer_name, email, items: itemsJson, user_id } = session.metadata;
+    const items = JSON.parse(itemsJson);
+    const { total, orderItems } = await buildOrderItems(items);
+
+    const order = await prisma.order.create({
+      data: {
+        reference: stripeRef,
+        customerName: customer_name,
+        customerEmail: email,
+        total,
+        status: 'nouveau',
+        userId: user_id ? Number(user_id) : null,
+        items: { create: orderItems },
+      },
+      include: { items: true },
+    });
+
+    sendOrderConfirmation({
+      to: email,
+      name: customer_name,
+      reference: order.reference,
+      items: order.items,
+      total: order.total,
+    });
+  }
+
+  res.json({ received: true });
+}
