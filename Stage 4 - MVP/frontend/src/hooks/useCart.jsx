@@ -21,7 +21,10 @@ export function CartProvider({ children }) {
     setCart(prev => {
       const key = `${product.id}-${size}`;
       const ex = prev.find(i => i.key === key);
-      if (ex) return prev.map(i => i.key === key ? { ...i, qty: i.qty + 1 } : i);
+      if (ex) {
+        const nextQty = Math.min(ex.qty + 1, ex.quantity ?? Infinity);
+        return prev.map(i => i.key === key ? { ...i, qty: nextQty } : i);
+      }
       return [...prev, { ...product, key, size, qty: 1 }];
     });
   }
@@ -29,7 +32,11 @@ export function CartProvider({ children }) {
   function remove(key) { setCart(prev => prev.filter(i => i.key !== key)); }
 
   function change(key, delta) {
-    setCart(prev => prev.map(i => i.key === key ? { ...i, qty: Math.max(1, i.qty + delta) } : i));
+    setCart(prev => prev.map((i) => {
+      if (i.key !== key) return i;
+      const nextQty = Math.max(1, Math.min(i.qty + delta, i.quantity ?? Infinity));
+      return { ...i, qty: nextQty };
+    }));
   }
 
   function clear() { setCart([]); }

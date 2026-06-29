@@ -10,6 +10,7 @@ const products = [
     category: 'Chemises',
     image_url: 'https://images.unsplash.com/photo-1602215464429-5d4eb71a7711?w=600&h=800&fit=crop&auto=format',
     in_stock: true,
+    quantity: 10,
     sizes: ['S', 'M', 'L', 'XL'],
     materials: ['Lin 100%', 'Boutons nacre'],
   },
@@ -20,6 +21,7 @@ const products = [
     category: 'Robes',
     image_url: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&h=800&fit=crop&auto=format',
     in_stock: true,
+    quantity: 12,
     sizes: ['XS', 'S', 'M', 'L'],
     materials: ['Coton bio', 'Fil de broderie'],
   },
@@ -30,6 +32,7 @@ const products = [
     category: 'Vestes',
     image_url: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?w=600&h=800&fit=crop&auto=format',
     in_stock: true,
+    quantity: 8,
     sizes: ['S', 'M', 'L'],
     materials: ['Laine mérinos', 'Doublure coton'],
   },
@@ -40,6 +43,7 @@ const products = [
     category: 'Pantalons',
     image_url: 'https://images.unsplash.com/photo-1594938298603-c8148c4b4e5b?w=600&h=800&fit=crop&auto=format',
     in_stock: true,
+    quantity: 14,
     sizes: ['36', '38', '40', '42', '44'],
     materials: ['Coton toile lavée', 'Boutons laiton'],
   },
@@ -50,6 +54,7 @@ const products = [
     category: 'Pulls',
     image_url: 'https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=600&h=800&fit=crop&auto=format',
     in_stock: false,
+    quantity: 0,
     sizes: ['S', 'M', 'L'],
     materials: ['Cachemire 100%'],
   },
@@ -60,6 +65,7 @@ const products = [
     category: 'Jupes',
     image_url: 'https://images.unsplash.com/photo-1583496661160-fb5218afa3e9?w=600&h=800&fit=crop&auto=format',
     in_stock: true,
+    quantity: 9,
     sizes: ['XS', 'S', 'M', 'L', 'XL'],
     materials: ['Coton 95%', 'Élasthanne 5%'],
   },
@@ -79,10 +85,10 @@ async function seed() {
     // Products
     for (const p of products) {
       await client.query(`
-        INSERT INTO products (name, description, price, category, image_url, in_stock, sizes, materials)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+        INSERT INTO products (name, description, price, category, image_url, in_stock, quantity, sizes, materials)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
         ON CONFLICT DO NOTHING
-      `, [p.name, p.description, p.price, p.category, p.image_url, p.in_stock, p.sizes, p.materials]);
+      `, [p.name, p.description, p.price, p.category, p.image_url, p.in_stock, p.quantity ?? 0, p.sizes, p.materials]);
     }
     console.log(`✅ ${products.length} produits insérés`);
 

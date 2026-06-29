@@ -16,6 +16,7 @@ const schema = `
     category    TEXT NOT NULL,
     image_url   TEXT,
     in_stock    BOOLEAN DEFAULT TRUE,
+    quantity    INT NOT NULL DEFAULT 0,
     sizes       TEXT[],
     materials   TEXT[],
     created_at  TIMESTAMPTZ DEFAULT NOW(),

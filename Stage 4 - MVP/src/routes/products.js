@@ -43,6 +43,7 @@ function toJSON(p) {
     category: p.category?.name ?? null,
     image_url: p.imageUrl,
     in_stock: p.inStock,
+    quantity: p.quantity,
     sizes: p.sizes,
     materials: p.materials,
     created_at: p.createdAt,
@@ -105,13 +106,17 @@ router.get('/:id', async (req, res) => {
 // ── Admin (JWT required) ────────────────────────────────────────────────────
 
 router.post('/', requireAuth, async (req, res) => {
-  const { name, description, price, category, image_url, in_stock, sizes, materials } = req.body;
-  if (!name || !price || !category) {
-    return res.status(400).json({ error: 'Nom, prix et catégorie requis' });
+  const { name, description, price, category, image_url, in_stock, quantity, sizes, materials } = req.body;
+  if (!name || !price || !category || quantity === undefined) {
+    return res.status(400).json({ error: 'Nom, prix, catégorie et quantité requis' });
+  }
+  if (Number(quantity) < 0) {
+    return res.status(400).json({ error: 'Quantité invalide' });
   }
   try {
     const cat = await resolveCategory(category);
     const slug = await uniqueSlug(slugify(name));
+    const qty = Number(quantity);
     const product = await prisma.product.create({
       data: {
         name,
@@ -119,7 +124,8 @@ router.post('/', requireAuth, async (req, res) => {
         description: description || null,
         price,
         imageUrl: image_url || null,
-        inStock: in_stock ?? true,
+        quantity: qty,
+        inStock: in_stock !== undefined ? in_stock : qty > 0,
         sizes: sizes || [],
         materials: materials || [],
         categoryId: cat.id,
@@ -134,13 +140,20 @@ router.post('/', requireAuth, async (req, res) => {
 });
 
 router.put('/:id', requireAuth, async (req, res) => {
-  const { name, description, price, category, image_url, in_stock, sizes, materials } = req.body;
+  const { name, description, price, category, image_url, in_stock, quantity, sizes, materials } = req.body;
   try {
     const data = {};
     if (name !== undefined)        data.name        = name;
     if (description !== undefined) data.description = description;
     if (price !== undefined)       data.price       = price;
     if (image_url !== undefined)   data.imageUrl    = image_url;
+    if (quantity !== undefined) {
+      if (Number(quantity) < 0) return res.status(400).json({ error: 'Quantité invalide' });
+      data.quantity = Number(quantity);
+      if (in_stock === undefined) {
+        data.inStock = Number(quantity) > 0;
+      }
+    }
     if (in_stock !== undefined)    data.inStock     = in_stock;
     if (sizes !== undefined)       data.sizes       = sizes;
     if (materials !== undefined)   data.materials   = materials;

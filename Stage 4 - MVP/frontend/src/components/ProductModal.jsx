@@ -52,6 +52,7 @@ export default function ProductModal({ product, onClose }) {
                 </div>
               </div>
             )}
+            <p className="text-xs text-muted mt-4">Quantité disponible : {product.quantity ?? 0}</p>
           </div>
 
           <div className="mt-8">

@@ -24,41 +24,67 @@ router.post('/', optionalAuth, async (req, res) => {
 
     let total = 0;
     const orderItems = [];
+    const orderCounts = new Map();
+
     for (const item of items) {
-      const product = byId[Number(item.product_id)];
-      if (!product) throw new Error(`Produit ${item.product_id} introuvable`);
-      if (!product.inStock) throw new Error(`${product.name} est épuisé`);
-      total += Number(product.price) * item.quantity;
+      const productId = Number(item.product_id);
+      orderCounts.set(productId, (orderCounts.get(productId) || 0) + item.quantity);
       orderItems.push({
-        productId: product.id,
-        name: product.name,
-        price: product.price,
+        productId,
+        name: byId[productId]?.name || 'Produit inconnu',
+        price: byId[productId]?.price || 0,
         size: item.size || null,
         quantity: item.quantity,
       });
+      total += Number(byId[productId]?.price || 0) * item.quantity;
     }
 
-    const order = await prisma.order.create({
-      data: {
-        reference: generateRef(),
-        customerName: customer_name,
-        customerEmail: email,
-        total,
-        userId: req.authUser?.id || null,
-        items: { create: orderItems },
-      },
-      include: { items: true },
+    const productRemaining = new Map();
+    for (const [productId, orderedQty] of orderCounts.entries()) {
+      const product = byId[productId];
+      if (!product) throw new Error(`Produit ${productId} introuvable`);
+      if (!product.inStock || product.quantity < orderedQty) {
+        throw new Error(`${product.name} n'est pas disponible en quantité suffisante`);
+      }
+      productRemaining.set(productId, product.quantity - orderedQty);
+    }
+
+    const createdOrder = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: {
+          reference: generateRef(),
+          customerName: customer_name,
+          customerEmail: email,
+          total,
+          userId: req.authUser?.id || null,
+          items: { create: orderItems },
+        },
+        include: { items: true },
+      });
+
+      for (const [id, remaining] of productRemaining.entries()) {
+        const orderedQty = orderCounts.get(id);
+        const updated = await tx.product.updateMany({
+          where: { id, quantity: { gte: orderedQty } },
+          data: { quantity: remaining, inStock: remaining > 0 },
+        });
+        if (updated.count === 0) {
+          throw new Error('Impossible de mettre à jour le stock pour ce produit');
+        }
+      }
+
+      return order;
     });
 
     sendOrderConfirmation({
       to: email,
       name: customer_name,
-      reference: order.reference,
-      items: order.items,
-      total: order.total,
+      reference: createdOrder.reference,
+      items: createdOrder.items,
+      total: createdOrder.total,
     });
 
-    res.status(201).json({ order: orderToJSON(order), reference: order.reference });
+    res.status(201).json({ order: orderToJSON(createdOrder), reference: createdOrder.reference });
   } catch (err) {
     console.error(err);
     res.status(400).json({ error: err.message });

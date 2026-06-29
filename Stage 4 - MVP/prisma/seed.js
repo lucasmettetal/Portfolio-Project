@@ -38,21 +38,21 @@ async function main() {
         description: 'Chemise artisanale en lin 100% naturel, cousue à la main. Coupe décontractée, parfaite pour l\'été.',
         price: 89.00,
         imageUrl: 'https://images.unsplash.com/photo-1602215464429-5d4eb71a7711?w=600&h=800&fit=crop&auto=format',
-        inStock: true, sizes: ['XS','S','M','L','XL'], materials: ['Lin 100%', 'Boutons nacre'], categoryId: chemises.id,
+        inStock: true, quantity: 10, sizes: ['XS','S','M','L','XL'], materials: ['Lin 100%', 'Boutons nacre'], categoryId: chemises.id,
       },
       {
         name: 'Chemise Coton Bio', slug: 'chemise-coton-bio',
         description: 'Chemise légère en coton biologique certifié GOTS. Coutures plates pour un confort optimal.',
         price: 79.00,
         imageUrl: 'https://images.unsplash.com/photo-1604695573706-53170668f6a6?w=600&h=800&fit=crop&auto=format',
-        inStock: true, sizes: ['S','M','L','XL'], materials: ['Coton bio 100%'], categoryId: chemises.id,
+        inStock: true, quantity: 12, sizes: ['S','M','L','XL'], materials: ['Coton bio 100%'], categoryId: chemises.id,
       },
       {
         name: 'Chemise Voile de Soie', slug: 'chemise-voile-soie',
         description: 'Chemise en voile de soie, légèreté et élégance naturelle. Finition à la main.',
         price: 135.00,
         imageUrl: 'https://images.unsplash.com/photo-1625946227485-0f5bfabf75cf?w=600&h=800&fit=crop&auto=format',
-        inStock: true, sizes: ['XS','S','M','L'], materials: ['Soie 100%'], categoryId: chemises.id,
+        inStock: true, quantity: 7, sizes: ['XS','S','M','L'], materials: ['Soie 100%'], categoryId: chemises.id,
       },
       // Robes
       {
@@ -60,7 +60,7 @@ async function main() {
         description: 'Robe longue en coton biologique avec broderies florales faites main. 15 heures de travail artisanal.',
         price: 145.00,
         imageUrl: 'https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=600&h=800&fit=crop&auto=format',
-        inStock: true, sizes: ['XS','S','M','L'], materials: ['Coton bio', 'Fil de broderie'], categoryId: robes.id,
+        inStock: true, quantity: 12, sizes: ['XS','S','M','L'], materials: ['Coton bio', 'Fil de broderie'], categoryId: robes.id,
       },
       {
         name: 'Robe Lin Midi', slug: 'robe-lin-midi',
@@ -74,7 +74,7 @@ async function main() {
         description: 'Robe plissée en soie naturelle, coupe fluide et élégante. Pièce d\'exception.',
         price: 195.00,
         imageUrl: 'https://images.unsplash.com/photo-1572804013427-4d7ca7268217?w=600&h=800&fit=crop&auto=format',
-        inStock: false, sizes: ['S','M','L'], materials: ['Soie 70%', 'Lin 30%'], categoryId: robes.id,
+        inStock: false, quantity: 0, sizes: ['S','M','L'], materials: ['Soie 70%', 'Lin 30%'], categoryId: robes.id,
       },
       // Vestes
       {

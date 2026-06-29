@@ -21,20 +21,33 @@ async function buildOrderItems(items) {
   const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
   const byId = Object.fromEntries(products.map(p => [p.id, p]));
 
+  const orderCounts = new Map();
   let total = 0;
   const orderItems = [];
+
   for (const item of items) {
-    const product = byId[Number(item.product_id)];
-    if (!product) continue;
-    total += Number(product.price) * item.quantity;
+    const productId = Number(item.product_id);
+    orderCounts.set(productId, (orderCounts.get(productId) || 0) + item.quantity);
+    const product = byId[productId];
+    if (!product) throw new Error(`Produit ${item.product_id} introuvable`);
     orderItems.push({
-      productId: product.id,
+      productId,
       name: product.name,
       price: product.price,
       size: item.size || null,
       quantity: item.quantity,
     });
+    total += Number(product.price) * item.quantity;
   }
+
+  for (const [productId, orderedQty] of orderCounts.entries()) {
+    const product = byId[productId];
+    if (!product) throw new Error(`Produit ${productId} introuvable`);
+    if (!product.inStock || product.quantity < orderedQty) {
+      throw new Error(`${product.name} n'est pas disponible en quantité suffisante`);
+    }
+  }
+
   return { total, orderItems };
 }
 
@@ -55,11 +68,17 @@ router.post('/checkout', optionalAuth, async (req, res) => {
     const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
     const byId = Object.fromEntries(products.map(p => [p.id, p]));
 
+    const orderCounts = new Map();
     const lineItems = [];
     for (const item of items) {
-      const product = byId[Number(item.product_id)];
+      const productId = Number(item.product_id);
+      const product = byId[productId];
       if (!product) throw new Error(`Produit ${item.product_id} introuvable`);
-      if (!product.inStock) throw new Error(`${product.name} est épuisé`);
+      const nextCount = (orderCounts.get(productId) || 0) + item.quantity;
+      orderCounts.set(productId, nextCount);
+      if (!product.inStock || product.quantity < nextCount) {
+        throw new Error(`${product.name} n'est pas disponible en quantité suffisante`);
+      }
       lineItems.push({
         price_data: {
           currency: 'eur',
@@ -120,29 +139,47 @@ router.get('/verify/:sessionId', async (req, res) => {
     const { customer_name, email, items: itemsJson, user_id } = session.metadata;
     const items = JSON.parse(itemsJson);
     const { total, orderItems } = await buildOrderItems(items);
+    const products = await prisma.product.findMany({ where: { id: { in: items.map(i => Number(i.product_id)) } } });
+    const createdOrder = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: {
+          reference: stripeRef,
+          customerName: customer_name,
+          customerEmail: email,
+          total,
+          status: 'nouveau',
+          userId: user_id ? Number(user_id) : null,
+          items: { create: orderItems },
+        },
+        include: { items: true },
+      });
 
-    const order = await prisma.order.create({
-      data: {
-        reference: stripeRef,
-        customerName: customer_name,
-        customerEmail: email,
-        total,
-        status: 'nouveau',
-        userId: user_id ? Number(user_id) : null,
-        items: { create: orderItems },
-      },
-      include: { items: true },
+      for (const product of products) {
+        const orderedQty = items
+          .filter(i => Number(i.product_id) === product.id)
+          .reduce((sum, i) => sum + i.quantity, 0);
+        const remaining = product.quantity - orderedQty;
+        const updated = await tx.product.updateMany({
+          where: { id: product.id, quantity: { gte: orderedQty } },
+          data: { quantity: remaining, inStock: remaining > 0 },
+        });
+        if (updated.count === 0) {
+          throw new Error(`Impossible de mettre à jour le stock pour ${product.name}`);
+        }
+      }
+
+      return order;
     });
 
     sendOrderConfirmation({
       to: email,
       name: customer_name,
-      reference: order.reference,
-      items: order.items,
-      total: order.total,
+      reference: createdOrder.reference,
+      items: createdOrder.items,
+      total: createdOrder.total,
     });
 
-    res.json({ order: orderToJSON(order), reference: order.reference });
+    res.json({ order: orderToJSON(createdOrder), reference: createdOrder.reference });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erreur serveur' });
@@ -179,25 +216,44 @@ export async function stripeWebhook(req, res) {
     const items = JSON.parse(itemsJson);
     const { total, orderItems } = await buildOrderItems(items);
 
-    const order = await prisma.order.create({
-      data: {
-        reference: stripeRef,
-        customerName: customer_name,
-        customerEmail: email,
-        total,
-        status: 'nouveau',
-        userId: user_id ? Number(user_id) : null,
-        items: { create: orderItems },
-      },
-      include: { items: true },
+    const products = await prisma.product.findMany({ where: { id: { in: items.map(i => Number(i.product_id)) } } });
+    const createdOrder = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.create({
+        data: {
+          reference: stripeRef,
+          customerName: customer_name,
+          customerEmail: email,
+          total,
+          status: 'nouveau',
+          userId: user_id ? Number(user_id) : null,
+          items: { create: orderItems },
+        },
+        include: { items: true },
+      });
+
+      for (const product of products) {
+        const orderedQty = items
+          .filter(i => Number(i.product_id) === product.id)
+          .reduce((sum, i) => sum + i.quantity, 0);
+        const remaining = product.quantity - orderedQty;
+        const updated = await tx.product.updateMany({
+          where: { id: product.id, quantity: { gte: orderedQty } },
+          data: { quantity: remaining, inStock: remaining > 0 },
+        });
+        if (updated.count === 0) {
+          throw new Error(`Impossible de mettre à jour le stock pour ${product.name}`);
+        }
+      }
+
+      return order;
     });
 
     sendOrderConfirmation({
       to: email,
       name: customer_name,
-      reference: order.reference,
-      items: order.items,
-      total: order.total,
+      reference: createdOrder.reference,
+      items: createdOrder.items,
+      total: createdOrder.total,
     });
   }
 
