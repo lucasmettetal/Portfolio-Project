@@ -3,6 +3,7 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci --omit=dev
+RUN apk add --no-cache openssl
 
 COPY prisma ./prisma
 RUN npx prisma generate
