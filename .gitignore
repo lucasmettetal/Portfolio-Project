@@ -1,28 +1,43 @@
 # Dépendances
 node_modules/
 */node_modules/
+**/node_modules/
 
 # Variables d'environnement — NE JAMAIS committer
 .env
-.env.production
-backend/.env
+.env.*
+!.env.example
 
 # Build
 dist/
 build/
-frontend/dist/
+**/dist/
+**/build/
+
+# Uploads (images produits — monté en volume Docker)
+Stage_4_MVP/uploads/
 
 # Prisma
-backend/prisma/migrations/dev.db
+*.db
+*.db-journal
 
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # OS
 .DS_Store
+.DS_Store?
 Thumbs.db
+ehthumbs.db
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Docker
+.dockerignore
