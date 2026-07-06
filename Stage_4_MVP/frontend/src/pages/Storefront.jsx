@@ -5,6 +5,7 @@ import { useCart } from '../hooks/useCart.jsx';
 import { useCustomerAuth } from '../hooks/useCustomerAuth.jsx';
 import ProductModal from '../components/ProductModal.jsx';
 import CartDrawer from '../components/CartDrawer.jsx';
+import ProductImage from '../components/ProductImage.jsx';
 
 // ── Images de la page d'accueil — remplace les chemins ici ─────────────────
 const IMG_HERO    = '/images/hero.jpg';
@@ -246,8 +247,8 @@ function ProductCard({ product, index, onSelect }) {
       onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       onClick={() => onSelect(product)}>
       <div className="relative aspect-[3/4] overflow-hidden bg-stone mb-4">
-        <img src={product.image_url} alt={product.name}
-          className={`w-full h-full object-cover transition-transform duration-700 ${hovered ? 'scale-105' : 'scale-100'}`} />
+        <ProductImage src={product.image_url} alt={product.name}
+          className={`w-full h-full transition-transform duration-700 ${hovered ? 'scale-105' : 'scale-100'}`} />
         {!product.in_stock && (
           <div className="absolute inset-0 bg-cream/75 backdrop-blur-sm flex items-center justify-center">
             <span className="text-[10px] tracking-[0.25em] uppercase border border-stone px-5 py-2 text-muted">Épuisé</span>

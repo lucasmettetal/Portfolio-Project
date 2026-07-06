@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCart } from '../hooks/useCart.jsx';
+import ProductImage from './ProductImage.jsx';
 
 export default function ProductModal({ product, onClose }) {
   const [selectedSize, setSelectedSize] = useState('');
@@ -16,7 +17,7 @@ export default function ProductModal({ product, onClose }) {
     <div onClick={onClose} className="fixed inset-0 bg-dark/60 z-50 flex items-center justify-center p-6">
       <div onClick={e => e.stopPropagation()}
         className="fade-up bg-white max-w-3xl w-full max-h-[90vh] overflow-auto grid md:grid-cols-2">
-        <img src={product.image_url} alt={product.name} className="w-full aspect-[3/4] object-cover" />
+        <ProductImage src={product.image_url} alt={product.name} className="w-full aspect-[3/4]" />
         <div className="p-10 flex flex-col justify-between">
           <div>
             <div className="flex justify-between items-start mb-6">

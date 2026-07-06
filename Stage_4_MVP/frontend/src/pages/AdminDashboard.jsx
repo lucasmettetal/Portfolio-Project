@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.jsx';
 import * as api from '../lib/api.js';
+import ProductImage from '../components/ProductImage.jsx';
 
 const STATUS_STYLES = {
   nouveau:    { bg: 'bg-yellow-50', text: 'text-yellow-800',  label: 'Nouveau' },
@@ -54,11 +55,6 @@ export default function AdminDashboard() {
     if (!window.confirm('Supprimer ce produit ?')) return;
     await api.deleteProduct(id);
     setProducts(prev => prev.filter(p => p.id !== id));
-  }
-
-  async function handleToggleStock(product) {
-    const updated = await api.updateProduct(product.id, { ...product, in_stock: !product.in_stock });
-    setProducts(prev => prev.map(p => p.id === product.id ? updated : p));
   }
 
   async function handleCustomOrderStatus(id, status) {
@@ -121,7 +117,7 @@ export default function AdminDashboard() {
               {[
                 { label: "Chiffre d'affaires",  value: stats ? `${stats.revenue.toFixed(2)} €` : '—', sub: 'Commandes livrées' },
                 { label: 'En attente',           value: stats?.pendingOrders ?? '—',                   sub: 'À traiter' },
-                { label: 'Produits actifs',      value: products.filter(p => p.in_stock).length,        sub: 'En stock' },
+                { label: 'Produits actifs',      value: products.filter(p => (p.quantity ?? 0) > 0).length, sub: 'En stock' },
                 { label: 'Catalogue',            value: products.length,                                sub: 'Produits au total' },
               ].map(({ label, value, sub }) => (
                 <div key={label} className="bg-white border border-stone px-7 py-6">
@@ -170,7 +166,6 @@ export default function AdminDashboard() {
               {products.map(p => (
                 <AdminProductCard key={p.id} product={p}
                   onEdit={() => { setEditTarget(p); setShowForm(true); }}
-                  onToggleStock={() => handleToggleStock(p)}
                   onDelete={() => handleDeleteProduct(p.id)} />
               ))}
             </div>
@@ -282,13 +277,14 @@ function OrderTable({ orders, onStatusChange, compact }) {
   );
 }
 
-function AdminProductCard({ product, onEdit, onToggleStock, onDelete }) {
+function AdminProductCard({ product, onEdit, onDelete }) {
+  const inStock = (product.quantity ?? 0) > 0;
   return (
     <div className="bg-white border border-stone">
       <div className="relative aspect-[3/4] overflow-hidden">
-        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
-        <span className={`absolute top-2.5 right-2.5 text-[10px] px-2.5 py-0.5 uppercase tracking-widest ${product.in_stock ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-          {product.in_stock ? 'En stock' : 'Épuisé'}
+        <ProductImage src={product.image_url} alt={product.name} className="w-full h-full" />
+        <span className={`absolute top-2.5 right-2.5 text-[10px] px-2.5 py-0.5 uppercase tracking-widest ${inStock ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+          {inStock ? 'En stock' : 'Épuisé'}
         </span>
       </div>
       <div className="p-4">
@@ -300,9 +296,6 @@ function AdminProductCard({ product, onEdit, onToggleStock, onDelete }) {
         <p className="text-xs text-muted mb-4">Quantité disponible : {product.quantity ?? 0}</p>
         <div className="flex gap-2">
           <button onClick={onEdit} className="flex-1 border border-stone text-xs uppercase tracking-widest py-2 text-muted hover:border-dark">Modifier</button>
-          <button onClick={onToggleStock} className="flex-1 border border-stone text-xs uppercase tracking-widest py-2 text-muted hover:border-dark">
-            {product.in_stock ? 'Désactiver' : 'Activer'}
-          </button>
           <button onClick={onDelete} className="bg-red-600 text-white text-xs px-3 py-2 hover:bg-red-700">✕</button>
         </div>
       </div>
@@ -311,7 +304,7 @@ function AdminProductCard({ product, onEdit, onToggleStock, onDelete }) {
 }
 
 function ProductForm({ product, onClose, onSave }) {
-  const blank = { name: '', description: '', price: '', category: 'Chemises', image_url: '', in_stock: true, quantity: 0, sizes: [], materials: [] };
+  const blank = { name: '', description: '', price: '', category: 'Chemises', image_url: '', quantity: 0, sizes: [], materials: [] };
   const [form, setForm]         = useState(product ? { ...product, price: product.price?.toString(), quantity: product.quantity ?? 0 } : blank);
   const [matInput, setMatInput] = useState('');
   const [sizeInput, setSizeInput] = useState('');
@@ -432,11 +425,11 @@ function ProductForm({ product, onClose, onSave }) {
             </div>
           ))}
 
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input type="checkbox" checked={form.in_stock} onChange={e => set('in_stock', e.target.checked)}
-              className="w-4 h-4 accent-accent" />
-            <span className="text-sm">En stock</span>
-          </label>
+          <p className="text-xs text-muted">
+            Statut : <span className={Number(form.quantity) > 0 ? 'text-green-700' : 'text-red-700'}>
+              {Number(form.quantity) > 0 ? 'En stock' : 'Épuisé'}
+            </span> — calculé automatiquement à partir de la quantité.
+          </p>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
