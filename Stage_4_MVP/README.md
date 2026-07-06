@@ -1,205 +1,324 @@
-# Rue 25 — Vêtements Artisanaux
+# Rue 25 — Handcrafted Clothing
 
-Site e-commerce pour une marque de vêtements artisanaux français, avec boutique, panier, commandes, paiement Stripe, espace client, service sur mesure et dashboard admin.
+E-commerce site for a French handcrafted clothing brand. Online store, cart, Stripe payment, customer account, made-to-measure service, admin dashboard, GDPR.
 
-**Stack :** React 18 + Vite + Tailwind CSS · Node.js + Express · PostgreSQL · Prisma ORM · Docker · Stripe
+**Stack:** React 18 · Vite · Tailwind CSS · Node.js · Express · PostgreSQL · Prisma ORM · Docker · Stripe
 
 ---
 
-## Démarrage rapide (Docker)
+## Application architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                          Browser                             │
+└───────────────────────┬─────────────────────────────────────┘
+                        │ HTTP (port 5173 dev / 80 prod)
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    nginx (frontend)                         │
+│  • Serves static React files (Vite build)                   │
+│  • Proxy  /api/*      → backend:3001                        │
+│  • Proxy  /uploads/*  → backend:3001                        │
+└───────────────────────┬─────────────────────────────────────┘
+                        │
+                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│               Express API (Node.js · port 3001)             │
+│                                                             │
+│  Middlewares: helmet · cors · express-rate-limit            │
+│                                                             │
+│  Routes:                                                    │
+│  /api/auth          → JWT auth (admin + customer)           │
+│  /api/products      → Product CRUD                          │
+│  /api/orders        → Orders (customer auth required)       │
+│  /api/stripe        → Checkout + signed webhook              │
+│  /api/custom-orders → Made-to-measure requests               │
+│  /api/upload        → Image upload (admin)                   │
+│  /api/contact       → Contact form                           │
+│  /uploads           → Static files (product images)         │
+└──────┬─────────────────────────────┬────────────────────────┘
+       │                             │
+       ▼                             ▼
+┌──────────────┐             ┌───────────────┐
+│  PostgreSQL  │             │  External APIs │
+│  (Prisma ORM)│             │  • Stripe      │
+│              │             │  • SMTP Gmail  │
+└──────────────┘             └───────────────┘
+```
+
+---
+
+## Database schema
+
+```
+┌─────────────┐       ┌──────────────┐       ┌───────────────┐
+│    users    │       │   products   │       │  categories   │
+│─────────────│       │──────────────│       │───────────────│
+│ id (PK)     │       │ id (PK)      │       │ id (PK)       │
+│ email       │       │ name         │       │ name          │
+│ password    │       │ slug         │       │ slug          │
+│ first_name  │       │ description  │       │ description   │
+│ last_name   │       │ price        │       └───────────────┘
+│ role        │       │ image_url    │              ▲
+│ created_at  │       │ in_stock     │              │ category_id
+└──────┬──────┘       │ quantity     │─────────────►│
+       │              │ sizes[]      │
+       │ user_id      │ materials[]  │
+       ▼              └──────┬───────┘
+┌──────────────┐             │ product_id
+│   orders     │             ▼
+│──────────────│      ┌──────────────┐
+│ id (PK)      │◄─────│ order_items  │
+│ reference    │      │──────────────│
+│ status       │      │ id (PK)      │
+│ total        │      │ order_id (FK)│
+│ customer_name│      │ product_id(FK│
+│ customer_email      │ name         │
+│ user_id (FK) │      │ price        │
+│ address_id(FK│      │ size         │
+└──────────────┘      │ quantity     │
+                      └──────────────┘
+
+┌────────────────┐    ┌────────────────────┐
+│   addresses    │    │   custom_orders    │
+│────────────────│    │────────────────────│
+│ id (PK)        │    │ id (PK)            │
+│ user_id (FK)   │    │ reference          │
+│ first_name     │    │ status             │
+│ last_name      │    │ name               │
+│ street         │    │ email              │
+│ city           │    │ garment_type       │
+│ postal_code    │    │ description        │
+│ country        │    │ chest/waist/hips…  │
+│ is_default     │    │ budget / timeline  │
+└────────────────┘    └────────────────────┘
+```
+
+**Relations:**
+- `User` → `Order`: 1 user can have multiple orders (1-N)
+- `User` → `Address`: 1 user can have multiple addresses (1-N)
+- `Order` → `OrderItem`: 1 order contains multiple items (1-N)
+- `Product` → `OrderItem`: 1 product can appear in multiple orders (1-N)
+- `Category` → `Product`: 1 category groups multiple products (1-N)
+- `CustomOrder`: independent entity, not linked to a customer account (public form)
+
+---
+
+## Features
+
+### Customer side
+| Feature | Description |
+|---|---|
+| Catalog | Product list with filters (category, search) |
+| Cart | Persisted in localStorage, with quantities and sizes |
+| Payment | Stripe Checkout (test: `4242 4242 4242 4242`) |
+| Customer account | Sign up, login, order history |
+| Made-to-measure | Form with measurements → quote by email |
+| Contact | Form with rate limiting (5/h) |
+| GDPR | Privacy policy, legal notice, cookie banner |
+
+### Admin side (`/admin`)
+| Feature | Description |
+|---|---|
+| Dashboard | Revenue stats, pending orders, total |
+| Products | Full CRUD + image upload |
+| Orders | List + status changes |
+| Made-to-measure | List + status changes for requests |
+
+---
+
+## Security
+
+| Mechanism | Implementation |
+|---|---|
+| Authentication | JWT signed with a 32+ character secret, 7-day expiration |
+| Password hashing | bcrypt cost factor 12 |
+| RBAC | Two roles: `ADMIN` (dashboard) and `USER` (customer) |
+| Rate limiting | 10 attempts/15min (auth), 5/h (contact) |
+| Stripe webhook | Signature verified with `constructEvent()` |
+| HTTP headers | `helmet`: X-Content-Type-Options, X-Frame-Options, HSTS… |
+| File upload | MIME filter + extension allowlist (.jpg .png .webp…) |
+| HTML injection | User input escaped in emails |
+| CORS | Strict allowlist via `CLIENT_URL` |
+| Stock | Atomic Prisma transaction + optimistic lock |
+
+---
+
+## Quick start (Docker)
 
 ```bash
 cp .env.example .env
-# → Éditez JWT_SECRET, STRIPE_SECRET_KEY et optionnellement les variables SMTP
+# Edit JWT_SECRET, STRIPE_SECRET_KEY, and optionally SMTP_*
 
 docker compose up --build -d
 ```
 
-Au premier démarrage, les migrations et le seed (catégories, produits, compte admin) s'exécutent automatiquement.
+On first start: automatic migrations + seed (products, admin).
 
-Ouvrez **http://localhost:5173**
+Open **http://localhost:5173**
 
 ---
 
-## Installation manuelle (sans Docker)
+## Manual installation
 
-### Prérequis
-
+### Prerequisites
 - Node.js 20+
-- PostgreSQL (ou Docker pour la base uniquement)
+- PostgreSQL
 
-### 1. Base de données
-
+### Backend
 ```bash
-docker run -d \
-  --name rue25-db \
-  -e POSTGRES_USER=rue25 \
-  -e POSTGRES_PASSWORD=rue25 \
-  -e POSTGRES_DB=rue25 \
-  -p 5433:5432 \
-  postgres:17-alpine
-```
-
-### 2. Backend
-
-```bash
-# À la racine du projet
 cp .env.example .env
-# → Éditez DATABASE_URL, JWT_SECRET, STRIPE_SECRET_KEY
-
 npm install
-npm run setup        # migrations + seed (seulement si la base est vide)
-npm run dev          # http://localhost:3001
+npm run setup    # migrations + seed if the database is empty
+npm run dev      # http://localhost:3001
 ```
 
-### 3. Frontend
-
+### Frontend
 ```bash
 cd frontend
 npm install
-npm run dev          # http://localhost:5173
+npm run dev      # http://localhost:5173
 ```
 
 ---
 
-## Comptes par défaut (après seed)
+## Default accounts
 
-| Rôle  | Email            | Mot de passe |
-|-------|------------------|--------------|
-| Admin | admin@rue25.fr   | admin25      |
-
----
-
-## Variables d'environnement
-
-Copiez `.env.example` en `.env` et remplissez les valeurs.
-
-| Variable               | Requis | Description |
-|------------------------|--------|-------------|
-| `DATABASE_URL`         | ✓      | URL PostgreSQL |
-| `JWT_SECRET`           | ✓      | Clé secrète JWT (min 32 caractères) |
-| `JWT_EXPIRES_IN`       |        | Durée de validité du token (défaut : `7d`) |
-| `ADMIN_EMAIL`          |        | Email admin créé au seed (défaut : `admin@rue25.fr`) |
-| `ADMIN_PASSWORD`       |        | Mot de passe admin créé au seed (défaut : `admin25`) |
-| `PORT`                 |        | Port du serveur (défaut : `3001`) |
-| `CLIENT_URL`           |        | URL du frontend pour CORS et redirections Stripe |
-| `STRIPE_SECRET_KEY`    | ✓      | Clé secrète Stripe (`sk_test_…` ou `sk_live_…`) |
-| `STRIPE_WEBHOOK_SECRET`|        | Secret webhook Stripe (`whsec_…`) |
-| `SMTP_HOST`            |        | Serveur SMTP (ex: `smtp.gmail.com`) |
-| `SMTP_PORT`            |        | Port SMTP (défaut : `587`) |
-| `SMTP_USER`            |        | Adresse email d'envoi |
-| `SMTP_PASS`            |        | Mot de passe ou clé d'application SMTP |
-| `SMTP_FROM`            |        | Nom affiché (ex: `Rue 25 <contact@rue25.fr>`) |
-
-> Les variables SMTP sont optionnelles : si absentes, les emails de confirmation sont simplement ignorés.
+| Role  | Email          | Password |
+|-------|----------------|--------------|
+| Admin | admin@rue25.fr | *(set in .env → ADMIN_PASSWORD)* |
 
 ---
 
-## Paiement Stripe (test)
+## Environment variables
 
-Carte de test : `4242 4242 4242 4242` — date future — CVC quelconque
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | ✓ | PostgreSQL URL |
+| `JWT_SECRET` | ✓ | JWT secret key (min 32 random characters) |
+| `ADMIN_EMAIL` | | Admin email (default: `admin@rue25.fr`) |
+| `ADMIN_PASSWORD` | | Initial admin password |
+| `CLIENT_URL` | | Frontend URL for CORS (default: `http://localhost:5173`) |
+| `STRIPE_SECRET_KEY` | ✓ | Stripe key (`sk_test_…` or `sk_live_…`) |
+| `STRIPE_WEBHOOK_SECRET` | | Stripe webhook secret (`whsec_…`) |
+| `SMTP_HOST` | | SMTP server (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | | SMTP port (default: `587`) |
+| `SMTP_USER` | | Sending email address |
+| `SMTP_PASS` | | SMTP app password |
 
-### Webhook en local
+> SMTP variables are optional: if missing, emails are silently skipped.
+
+---
+
+## Stripe webhook (local testing)
 
 ```bash
 stripe listen --forward-to localhost:3001/api/stripe/webhook
-# Copiez le whsec_... affiché dans STRIPE_WEBHOOK_SECRET
+# Copy the whsec_... into STRIPE_WEBHOOK_SECRET
 ```
+
+Test card: `4242 4242 4242 4242` · any future date · any CVC
 
 ---
 
-## Routes API
+## API routes
 
-### Authentification
-| Méthode | Route                        | Auth     | Description |
-|---------|------------------------------|----------|-------------|
-| POST    | /api/auth/login              | —        | Connexion admin → JWT |
-| POST    | /api/auth/register           | —        | Inscription client |
-| POST    | /api/auth/customer/login     | —        | Connexion client |
-| GET     | /api/auth/me                 | Client   | Profil connecté |
-| GET     | /api/auth/my-orders          | Client   | Historique commandes |
+### Auth
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | /api/auth/login | — | Admin login |
+| POST | /api/auth/register | — | Customer sign up |
+| POST | /api/auth/customer/login | — | Customer login |
+| GET | /api/auth/me | Customer | Logged-in profile |
+| GET | /api/auth/my-orders | Customer | Order history |
 
-> Les routes de connexion sont protégées par un rate limiter (10 tentatives / 15 min par IP).
+### Products
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| GET | /api/products | — | Catalog (filters: category, search) |
+| GET | /api/products/:id | — | Product detail |
+| POST | /api/products | Admin | Create |
+| PUT | /api/products/:id | Admin | Update |
+| DELETE | /api/products/:id | Admin | Delete |
 
-### Produits
-| Méthode | Route                     | Auth  | Description |
-|---------|---------------------------|-------|-------------|
-| GET     | /api/products             | —     | Liste (filtres : `category`, `search`) |
-| GET     | /api/products/categories  | —     | Liste des catégories |
-| GET     | /api/products/:id         | —     | Détail produit |
-| POST    | /api/products             | Admin | Créer un produit |
-| PUT     | /api/products/:id         | Admin | Modifier un produit |
-| DELETE  | /api/products/:id         | Admin | Supprimer un produit |
-
-### Commandes
-| Méthode | Route                     | Auth    | Description |
-|---------|---------------------------|---------|-------------|
-| POST    | /api/orders               | —       | Passer une commande (email de confirmation envoyé) |
-| GET     | /api/orders               | Admin   | Liste commandes |
-| GET     | /api/orders/stats         | Admin   | Stats dashboard |
-| PATCH   | /api/orders/:id/status    | Admin   | Changer le statut |
+### Orders
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | /api/orders | **Customer** | Place an order |
+| GET | /api/orders | Admin | List orders |
+| GET | /api/orders/stats | Admin | Dashboard stats |
+| PATCH | /api/orders/:id/status | Admin | Change status |
 
 ### Stripe
-| Méthode | Route                        | Auth | Description |
-|---------|------------------------------|------|-------------|
-| POST    | /api/stripe/checkout         | —    | Créer session Checkout |
-| GET     | /api/stripe/verify/:id       | —    | Vérifier paiement & créer commande (fallback) |
-| POST    | /api/stripe/webhook          | —    | Webhook signé (création commande + email) |
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | /api/stripe/checkout | Customer | Create Checkout session |
+| POST | /api/stripe/webhook | — (signed) | Stripe webhook |
+| GET | /api/stripe/verify/:id | — | Verify payment (fallback) |
 
-### Sur Mesure
-| Méthode | Route                          | Auth    | Description |
-|---------|--------------------------------|---------|-------------|
-| POST    | /api/custom-orders             | —       | Soumettre une demande (email de confirmation envoyé) |
-| GET     | /api/custom-orders             | Admin   | Lister les demandes |
-| GET     | /api/custom-orders/:id         | Admin   | Détail demande |
-| PATCH   | /api/custom-orders/:id/status  | Admin   | Changer le statut |
+### Made-to-measure & Contact
+| Method | Route | Auth | Description |
+|---|---|---|---|
+| POST | /api/custom-orders | — | Submit a request |
+| GET | /api/custom-orders | Admin | List requests |
+| PATCH | /api/custom-orders/:id/status | Admin | Change status |
+| POST | /api/contact | — | Send a message (5/h) |
 
 ---
 
-## Structure du projet
+## Project structure
 
 ```
-Stage 4 - MVP/
+Stage_4_MVP/
 ├── docker-compose.yml
-├── Dockerfile                 # Backend
+├── Dockerfile
 ├── .env.example
 ├── prisma/
-│   ├── schema.prisma          # Modèles (User, Product, Order, CustomOrder, Address)
+│   ├── schema.prisma       # Models: User, Product, Category, Order, OrderItem, CustomOrder, Address
 │   ├── migrations/
-│   └── seed.js                # Données initiales (catégories, produits, admin)
+│   └── seed.js             # Initial data
+├── scripts/
+│   └── seed-if-empty.mjs   # Automatic seed on startup if the database is empty
 ├── src/
-│   ├── index.js               # Point d'entrée Express
+│   ├── index.js            # Express entry point (helmet, cors, routes)
 │   ├── lib/
-│   │   ├── prisma.js          # Client Prisma singleton
-│   │   ├── mailer.js          # Emails transactionnels (Nodemailer)
-│   │   └── utils.js           # generateRef, orderToJSON
+│   │   ├── prisma.js       # Prisma singleton client
+│   │   ├── mailer.js       # Emails (Nodemailer, fire-and-forget)
+│   │   └── utils.js        # generateRef (crypto.randomInt), orderToJSON
 │   ├── middleware/
-│   │   └── auth.js            # requireAuth / requireCustomer / optionalAuth
+│   │   └── auth.js         # requireAuth / requireCustomer / optionalAuth
 │   └── routes/
-│       ├── auth.js            # Connexion admin + client (rate limited)
-│       ├── products.js
-│       ├── orders.js
-│       ├── stripe.js          # Checkout + webhook signé
-│       └── customOrders.js
+│       ├── auth.js         # Admin + customer login (rate limited)
+│       ├── products.js     # Product CRUD
+│       ├── orders.js       # Orders + atomic stock management
+│       ├── stripe.js       # Checkout + signed webhook
+│       ├── customOrders.js # Made-to-measure requests
+│       ├── upload.js       # Image upload (multer, admin only)
+│       └── contact.js      # Contact form (rate limited)
 └── frontend/
-    ├── Dockerfile             # Build Vite → nginx
-    ├── nginx.conf             # SPA + proxy /api → backend
+    ├── Dockerfile          # Vite build → nginx
+    ├── nginx.conf          # SPA + proxy /api and /uploads → backend
     └── src/
-        ├── lib/api.js         # Tous les appels HTTP
+        ├── lib/api.js      # All HTTP calls centralized
         ├── hooks/
-        │   ├── useAuth.jsx         # Auth admin
-        │   ├── useCustomerAuth.jsx  # Auth client
-        │   └── useCart.jsx          # Panier (persisté en localStorage)
-        ├── pages/
-        │   ├── Storefront.jsx
-        │   ├── SurMesurePage.jsx
-        │   ├── LoginPage.jsx
-        │   ├── RegisterPage.jsx
-        │   ├── AccountPage.jsx
-        │   ├── OrderSuccess.jsx
-        │   ├── AdminLogin.jsx
-        │   └── AdminDashboard.jsx
-        └── components/
-            ├── ProductModal.jsx
-            └── CartDrawer.jsx
+        │   ├── useAuth.jsx          # Admin auth (localStorage)
+        │   ├── useCustomerAuth.jsx  # Customer auth (localStorage)
+        │   └── useCart.jsx          # Cart (persisted in localStorage)
+        ├── components/
+        │   ├── ProductModal.jsx     # Product modal + add to cart
+        │   ├── CartDrawer.jsx       # Side cart + checkout
+        │   └── CookieBanner.jsx     # Cookie consent banner
+        └── pages/
+            ├── Storefront.jsx          # Main storefront
+            ├── AboutPage.jsx           # Our story
+            ├── ContactPage.jsx         # Contact form
+            ├── SurMesurePage.jsx       # Made-to-measure request
+            ├── LoginPage.jsx           # Customer login
+            ├── RegisterPage.jsx        # Customer sign up
+            ├── AccountPage.jsx         # Customer account area
+            ├── OrderSuccess.jsx        # Stripe payment confirmation
+            ├── AdminLogin.jsx          # Admin login
+            ├── AdminDashboard.jsx      # Admin dashboard
+            ├── PrivacyPage.jsx         # Privacy policy
+            └── LegalPage.jsx           # Legal notice
 ```
