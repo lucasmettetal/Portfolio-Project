@@ -3,6 +3,7 @@ import { AuthProvider }         from './hooks/useAuth.jsx';
 import { CustomerAuthProvider } from './hooks/useCustomerAuth.jsx';
 import { CartProvider }         from './hooks/useCart.jsx';
 
+import LandingPage     from './pages/LandingPage.jsx';
 import Storefront      from './pages/Storefront.jsx';
 import AdminLogin      from './pages/AdminLogin.jsx';
 import AdminDashboard  from './pages/AdminDashboard.jsx';
@@ -26,7 +27,8 @@ export default function App() {
         <CartProvider>
           <BrowserRouter>
             <Routes>
-              <Route path="/"                              element={<Storefront />} />
+              <Route path="/"                              element={<LandingPage />} />
+              <Route path="/boutique"                     element={<Storefront />} />
               <Route path="/notre-histoire"               element={<AboutPage />} />
               <Route path="/contact"                      element={<ContactPage />} />
               <Route path="/politique-de-confidentialite" element={<PrivacyPage />} />
