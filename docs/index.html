@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rue 25 — Artisanal Clothing E-Commerce</title>
+  <title>Rue 25 — Vêtements Artisanaux</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -16,6 +16,8 @@
       --muted: #8a7060;
     }
 
+    html { scroll-behavior: smooth; }
+
     body {
       font-family: Georgia, 'Times New Roman', serif;
       background: var(--cream);
@@ -23,47 +25,88 @@
       line-height: 1.6;
     }
 
+    /* NAV */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.2rem 3rem;
+      background: var(--cream);
+      border-bottom: 1px solid #ddd3c4;
+    }
+
+    .nav-logo {
+      font-size: 1.2rem;
+      color: var(--brown);
+      text-decoration: none;
+      letter-spacing: 0.05em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--brown); }
+
     /* HERO */
     .hero {
       min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding-top: 70px;
+    }
+
+    .hero-content {
       display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 4rem 2rem;
-      border-bottom: 1px solid #ddd3c4;
+      padding: 5rem 4rem;
     }
 
     .hero-tag {
       font-family: 'Helvetica Neue', Arial, sans-serif;
-      font-size: 0.7rem;
-      letter-spacing: 0.25em;
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
       text-transform: uppercase;
       color: var(--orange);
       margin-bottom: 2rem;
     }
 
     .hero h1 {
-      font-size: clamp(3rem, 10vw, 7rem);
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
       font-weight: 400;
       color: var(--brown);
+      line-height: 1.1;
       margin-bottom: 1.5rem;
-      line-height: 1;
     }
 
     .hero p {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       color: var(--muted);
-      max-width: 480px;
-      margin-bottom: 3rem;
+      max-width: 420px;
+      margin-bottom: 2.5rem;
+      line-height: 1.8;
     }
 
     .hero-buttons {
       display: flex;
       gap: 1rem;
       flex-wrap: wrap;
-      justify-content: center;
     }
 
     .btn {
@@ -76,468 +119,522 @@
       border: 1px solid var(--brown);
       color: var(--brown);
       transition: all 0.2s;
+      display: inline-block;
     }
 
-    .btn:hover {
-      background: var(--brown);
-      color: var(--cream);
+    .btn:hover { background: var(--brown); color: var(--cream); }
+
+    .btn-filled { background: var(--brown); color: var(--cream); }
+    .btn-filled:hover { background: var(--brown-light); border-color: var(--brown-light); }
+
+    .hero-image {
+      background: #e8ddd0;
+      overflow: hidden;
+      position: relative;
     }
 
-    .btn-filled {
-      background: var(--brown);
-      color: var(--cream);
+    .hero-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
-    .btn-filled:hover {
-      background: var(--brown-light);
-      border-color: var(--brown-light);
+    .hero-image-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #e8ddd0 0%, #d4c4b0 100%);
     }
 
-    /* SECTIONS */
-    section {
-      max-width: 1100px;
+    .placeholder-text {
+      font-size: 4rem;
+      opacity: 0.3;
+    }
+
+    /* PROMISE */
+    .promise {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid #ddd3c4;
+      border-bottom: 1px solid #ddd3c4;
+    }
+
+    .promise-item {
+      padding: 3rem 2rem;
+      text-align: center;
+      border-right: 1px solid #ddd3c4;
+    }
+
+    .promise-item:last-child { border-right: none; }
+
+    .promise-icon {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .promise-title {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--brown);
+      margin-bottom: 0.5rem;
+    }
+
+    .promise-desc {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    /* COLLECTIONS */
+    .collections {
+      padding: 6rem 3rem;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 6rem 2rem;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 3rem;
     }
 
     .section-tag {
       font-family: 'Helvetica Neue', Arial, sans-serif;
       font-size: 0.65rem;
-      letter-spacing: 0.25em;
+      letter-spacing: 0.3em;
       text-transform: uppercase;
       color: var(--orange);
-      margin-bottom: 1rem;
-    }
-
-    h2 {
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-      font-weight: 400;
-      color: var(--brown);
-      margin-bottom: 1rem;
-    }
-
-    .section-intro {
-      color: var(--muted);
-      max-width: 560px;
-      margin-bottom: 3rem;
-      font-size: 1rem;
-    }
-
-    /* FEATURES GRID */
-    .features {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 2rem;
-    }
-
-    .feature {
-      border: 1px solid #ddd3c4;
-      padding: 2rem;
-    }
-
-    .feature-title {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      font-size: 0.75rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      color: var(--brown);
       margin-bottom: 0.75rem;
     }
 
-    .feature p {
-      font-size: 0.9rem;
-      color: var(--muted);
-      line-height: 1.7;
+    h2 {
+      font-size: clamp(1.8rem, 3vw, 2.5rem);
+      font-weight: 400;
+      color: var(--brown);
     }
 
-    /* STACK */
-    .stack-grid {
+    .collections-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
     }
 
-    .stack-item {
-      background: white;
-      border: 1px solid #ddd3c4;
-      padding: 1.5rem;
+    .collection-card {
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
     }
 
-    .stack-layer {
+    .collection-img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.4s ease;
+      background: linear-gradient(135deg, #ddd0c0 0%, #c8b89a 100%);
+    }
+
+    .collection-card:hover .collection-img { transform: scale(1.03); }
+
+    .collection-info {
+      padding: 1.2rem 0;
+    }
+
+    .collection-category {
       font-family: 'Helvetica Neue', Arial, sans-serif;
       font-size: 0.6rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--orange);
-      margin-bottom: 0.4rem;
-    }
-
-    .stack-name {
-      font-size: 1rem;
-      color: var(--brown);
       margin-bottom: 0.3rem;
     }
 
-    .stack-desc {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-
-    /* ARCHITECTURE */
-    .arch-box {
-      background: white;
-      border: 1px solid #ddd3c4;
-      padding: 2rem;
-      font-family: 'Courier New', monospace;
-      font-size: 0.85rem;
-      color: var(--text);
-      line-height: 2;
-      overflow-x: auto;
-    }
-
-    .arch-box span {
-      color: var(--orange);
-    }
-
-    /* SECURITY */
-    .security-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem;
-    }
-
-    .security-item {
-      display: flex;
-      gap: 1rem;
-      padding: 1.2rem;
-      border: 1px solid #ddd3c4;
-      background: white;
-    }
-
-    .security-dot {
-      width: 6px;
-      height: 6px;
-      background: var(--orange);
-      border-radius: 50%;
-      margin-top: 0.45rem;
-      flex-shrink: 0;
-    }
-
-    .security-label {
-      font-family: 'Helvetica Neue', Arial, sans-serif;
-      font-size: 0.7rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+    .collection-name {
+      font-size: 1.1rem;
       color: var(--brown);
       margin-bottom: 0.2rem;
     }
 
-    .security-desc {
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-
-    /* TEAM */
-    .team-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 2rem;
-    }
-
-    .team-card {
-      border: 1px solid #ddd3c4;
-      padding: 2rem;
-    }
-
-    .team-role {
+    .collection-price {
       font-family: 'Helvetica Neue', Arial, sans-serif;
-      font-size: 0.65rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--orange);
-      margin-bottom: 0.5rem;
-    }
-
-    .team-name {
-      font-size: 1.3rem;
-      color: var(--brown);
-      margin-bottom: 1rem;
-    }
-
-    .team-tasks {
-      list-style: none;
       font-size: 0.875rem;
       color: var(--muted);
     }
 
-    .team-tasks li {
-      padding: 0.3rem 0;
-      border-bottom: 1px solid #ede5d8;
+    .collection-placeholder {
+      width: 100%;
+      aspect-ratio: 3/4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      opacity: 0.2;
     }
 
-    .team-tasks li:last-child { border-bottom: none; }
-
-    /* DIVIDER */
-    .divider {
-      border: none;
+    /* STORY */
+    .story {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 500px;
       border-top: 1px solid #ddd3c4;
+    }
+
+    .story-image {
+      background: linear-gradient(135deg, #e0d4c4 0%, #c8b89a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      opacity: 0.3;
+      min-height: 400px;
+    }
+
+    .story-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .story-content {
+      padding: 5rem 4rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .story-content .section-tag { text-align: left; }
+
+    .story-content h2 {
+      text-align: left;
+      margin-bottom: 1.5rem;
+    }
+
+    .story-content p {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.9;
+      margin-bottom: 1rem;
+      max-width: 480px;
+    }
+
+    .story-content .btn { margin-top: 1.5rem; }
+
+    /* SUR MESURE */
+    .sur-mesure {
+      background: var(--brown);
+      color: var(--cream);
+      padding: 6rem 3rem;
+      text-align: center;
+    }
+
+    .sur-mesure .section-tag { color: var(--orange); }
+
+    .sur-mesure h2 {
+      color: var(--cream);
+      margin-bottom: 1rem;
+    }
+
+    .sur-mesure p {
+      color: rgba(245, 240, 232, 0.7);
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+      font-size: 1rem;
+      line-height: 1.8;
+    }
+
+    .sur-mesure .btn {
+      border-color: var(--cream);
+      color: var(--cream);
+    }
+
+    .sur-mesure .btn:hover {
+      background: var(--cream);
+      color: var(--brown);
+    }
+
+    /* STEPS */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      border-top: 1px solid rgba(245, 240, 232, 0.2);
+      margin-top: 4rem;
+    }
+
+    .step {
+      padding: 2rem;
+      border-right: 1px solid rgba(245, 240, 232, 0.2);
+      text-align: left;
+    }
+
+    .step:last-child { border-right: none; }
+
+    .step-num {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      color: var(--orange);
+      margin-bottom: 0.75rem;
+    }
+
+    .step-title {
+      font-size: 1rem;
+      color: var(--cream);
+      margin-bottom: 0.5rem;
+    }
+
+    .step-desc {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.8rem;
+      color: rgba(245, 240, 232, 0.6);
+      line-height: 1.6;
     }
 
     /* FOOTER */
     footer {
-      text-align: center;
-      padding: 4rem 2rem;
       border-top: 1px solid #ddd3c4;
+      padding: 4rem 3rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 3rem;
     }
 
-    footer h3 {
-      font-size: 2rem;
-      font-weight: 400;
+    .footer-brand p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 0.75rem;
+      line-height: 1.7;
+      max-width: 280px;
+    }
+
+    .footer-logo {
+      font-size: 1.5rem;
       color: var(--brown);
+    }
+
+    .footer-col h4 {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--brown);
+      margin-bottom: 1rem;
+    }
+
+    .footer-col ul {
+      list-style: none;
+    }
+
+    .footer-col ul li {
       margin-bottom: 0.5rem;
     }
 
-    footer p {
+    .footer-col ul li a {
       font-size: 0.875rem;
       color: var(--muted);
-      margin-bottom: 2rem;
+      text-decoration: none;
+      transition: color 0.2s;
     }
 
-    footer .footer-links {
+    .footer-col ul li a:hover { color: var(--brown); }
+
+    .footer-bottom {
+      grid-column: 1 / -1;
+      border-top: 1px solid #ddd3c4;
+      padding-top: 1.5rem;
       display: flex;
-      gap: 1rem;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-bottom: 3rem;
+      justify-content: space-between;
+      align-items: center;
     }
 
-    .footer-meta {
+    .footer-bottom p {
       font-family: 'Helvetica Neue', Arial, sans-serif;
       font-size: 0.7rem;
-      letter-spacing: 0.1em;
       color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-image { min-height: 50vw; }
+      .hero-content { padding: 3rem 2rem; }
+      .promise { grid-template-columns: 1fr; }
+      .promise-item { border-right: none; border-bottom: 1px solid #ddd3c4; }
+      .collections-grid { grid-template-columns: 1fr 1fr; }
+      .story { grid-template-columns: 1fr; }
+      .story-image { min-height: 300px; }
+      .story-content { padding: 3rem 2rem; }
+      .steps { grid-template-columns: 1fr 1fr; }
+      .step { border-bottom: 1px solid rgba(245,240,232,0.2); }
+      footer { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 600px) {
-      .hero-buttons { flex-direction: column; align-items: center; }
+      .collections-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
+  <!-- NAV -->
+  <nav>
+    <a href="#" class="nav-logo">Rue 25</a>
+    <ul class="nav-links">
+      <li><a href="#collections">Collections</a></li>
+      <li><a href="#histoire">Notre histoire</a></li>
+      <li><a href="#sur-mesure">Sur mesure</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
   <!-- HERO -->
   <div class="hero">
-    <p class="hero-tag">Holberton School — Full-Stack MVP</p>
-    <h1>Rue 25</h1>
-    <p>An artisanal clothing e-commerce platform built with React, Node.js, PostgreSQL, and Stripe.</p>
-    <div class="hero-buttons">
-      <a href="https://github.com/lucasmettetal/Portfolio-Project" class="btn btn-filled" target="_blank">View on GitHub</a>
-      <a href="#features" class="btn">Explore the project</a>
+    <div class="hero-content">
+      <p class="hero-tag">Vêtements artisanaux français</p>
+      <h1>L'élégance faite à la main</h1>
+      <p>Rue 25 propose des vêtements fabriqués avec soin, des matières nobles et un savoir-faire artisanal. Chaque pièce est pensée pour durer.</p>
+      <div class="hero-buttons">
+        <a href="#collections" class="btn btn-filled">Découvrir la collection</a>
+        <a href="#sur-mesure" class="btn">Sur mesure</a>
+      </div>
+    </div>
+    <div class="hero-image">
+      <div class="hero-image-placeholder">
+        <span class="placeholder-text">🧵</span>
+      </div>
     </div>
   </div>
 
-  <!-- FEATURES -->
-  <section id="features">
-    <p class="section-tag">What we built</p>
-    <h2>A complete e-commerce experience</h2>
-    <p class="section-intro">From product browsing to Stripe checkout, customer accounts, admin dashboard, and custom tailoring requests.</p>
-    <div class="features">
-      <div class="feature">
-        <p class="feature-title">Product Catalog</p>
-        <p>Browse artisanal clothing with category filters, full-text search, size selection, and material details.</p>
-      </div>
-      <div class="feature">
-        <p class="feature-title">Cart & Checkout</p>
-        <p>Persistent cart saved in localStorage. Stripe Checkout integration with server-side price validation.</p>
-      </div>
-      <div class="feature">
-        <p class="feature-title">Customer Accounts</p>
-        <p>Registration, login, order history, and saved addresses — secured with JWT authentication.</p>
-      </div>
-      <div class="feature">
-        <p class="feature-title">Admin Dashboard</p>
-        <p>Full product CRUD, image uploads, order management, and custom tailoring request tracking.</p>
-      </div>
-      <div class="feature">
-        <p class="feature-title">Custom Tailoring</p>
-        <p>Public form for bespoke orders — measurements, budget, timeline — with email confirmation.</p>
-      </div>
-      <div class="feature">
-        <p class="feature-title">GDPR Compliant</p>
-        <p>Cookie banner, privacy policy, legal notice, and transparent data handling throughout.</p>
-      </div>
+  <!-- PROMISE -->
+  <div class="promise">
+    <div class="promise-item">
+      <span class="promise-icon">✦</span>
+      <p class="promise-title">Fait à la main</p>
+      <p class="promise-desc">Chaque vêtement est confectionné avec soin par des artisans passionnés.</p>
     </div>
-  </section>
-
-  <hr class="divider" />
-
-  <!-- STACK -->
-  <section>
-    <p class="section-tag">Technical stack</p>
-    <h2>Built with modern tools</h2>
-    <p class="section-intro">A four-layer architecture containerized with Docker and served through nginx.</p>
-    <div class="stack-grid">
-      <div class="stack-item">
-        <p class="stack-layer">Frontend</p>
-        <p class="stack-name">React 18 + Vite</p>
-        <p class="stack-desc">Tailwind CSS · React Router · Context API</p>
-      </div>
-      <div class="stack-item">
-        <p class="stack-layer">Backend</p>
-        <p class="stack-name">Node.js + Express</p>
-        <p class="stack-desc">ESM modules · REST API · Middleware chain</p>
-      </div>
-      <div class="stack-item">
-        <p class="stack-layer">Database</p>
-        <p class="stack-name">PostgreSQL + Prisma</p>
-        <p class="stack-desc">7 models · Migrations · Transactions</p>
-      </div>
-      <div class="stack-item">
-        <p class="stack-layer">Payment</p>
-        <p class="stack-name">Stripe Checkout</p>
-        <p class="stack-desc">Webhook · Signature verification · Idempotency</p>
-      </div>
-      <div class="stack-item">
-        <p class="stack-layer">Infrastructure</p>
-        <p class="stack-name">Docker + nginx</p>
-        <p class="stack-desc">3 containers · 2 volumes · Reverse proxy</p>
-      </div>
-      <div class="stack-item">
-        <p class="stack-layer">Email</p>
-        <p class="stack-name">Nodemailer</p>
-        <p class="stack-desc">SMTP · Fire-and-forget · Graceful skip</p>
-      </div>
+    <div class="promise-item">
+      <span class="promise-icon">✦</span>
+      <p class="promise-title">Matières nobles</p>
+      <p class="promise-desc">Lin, coton biologique, laine mérinos — des matériaux sélectionnés pour leur qualité.</p>
     </div>
-  </section>
-
-  <hr class="divider" />
-
-  <!-- ARCHITECTURE -->
-  <section>
-    <p class="section-tag">Architecture</p>
-    <h2>How it fits together</h2>
-    <p class="section-intro">A clean separation between frontend, API, and data layers — all containerized.</p>
-    <div class="arch-box">
-      Browser<br/>
-      &nbsp;&nbsp;<span>↓</span><br/>
-      nginx <span>(port 80)</span><br/>
-      &nbsp;&nbsp;<span>→ /api/*</span> &nbsp;&nbsp;&nbsp;&nbsp;→ Express API <span>(port 3001)</span><br/>
-      &nbsp;&nbsp;<span>→ /uploads/*</span> → Express static files<br/>
-      &nbsp;&nbsp;<span>→ /*</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ React SPA (index.html)<br/>
-      &nbsp;&nbsp;<span>↓</span><br/>
-      Prisma ORM<br/>
-      &nbsp;&nbsp;<span>↓</span><br/>
-      PostgreSQL
+    <div class="promise-item">
+      <span class="promise-icon">✦</span>
+      <p class="promise-title">Sur mesure</p>
+      <p class="promise-desc">Un service de création personnalisée pour un vêtement unique à votre mesure.</p>
     </div>
-  </section>
+  </div>
 
-  <hr class="divider" />
-
-  <!-- SECURITY -->
-  <section>
-    <p class="section-tag">Security</p>
-    <h2>Production-grade security</h2>
-    <p class="section-intro">Security was a core concern throughout — not an afterthought.</p>
-    <div class="security-grid">
-      <div class="security-item">
-        <div class="security-dot"></div>
-        <div>
-          <p class="security-label">Password hashing</p>
-          <p class="security-desc">bcrypt with cost factor 12 — 4096 rounds, unique salt per user</p>
+  <!-- COLLECTIONS -->
+  <section class="collections" id="collections">
+    <div class="section-header">
+      <p class="section-tag">Nouvelle saison</p>
+      <h2>La collection</h2>
+    </div>
+    <div class="collections-grid">
+      <div class="collection-card">
+        <div class="collection-placeholder" style="background: linear-gradient(135deg, #ddd0c0, #c8b89a);">🧣</div>
+        <div class="collection-info">
+          <p class="collection-category">Hauts</p>
+          <p class="collection-name">Chemise en lin naturel</p>
+          <p class="collection-price">À partir de 89 €</p>
         </div>
       </div>
-      <div class="security-item">
-        <div class="security-dot"></div>
-        <div>
-          <p class="security-label">JWT Authentication</p>
-          <p class="security-desc">Stateless tokens signed with a 32+ character secret, 7-day expiry</p>
+      <div class="collection-card">
+        <div class="collection-placeholder" style="background: linear-gradient(135deg, #c8d4cc, #a8bdb5);">🧥</div>
+        <div class="collection-info">
+          <p class="collection-category">Manteaux</p>
+          <p class="collection-name">Veste en laine mérinos</p>
+          <p class="collection-price">À partir de 245 €</p>
         </div>
       </div>
-      <div class="security-item">
-        <div class="security-dot"></div>
-        <div>
-          <p class="security-label">Role-based access</p>
-          <p class="security-desc">USER and ADMIN roles enforced via middleware on every protected route</p>
-        </div>
-      </div>
-      <div class="security-item">
-        <div class="security-dot"></div>
-        <div>
-          <p class="security-label">Stripe webhook</p>
-          <p class="security-desc">Signature verified with constructEvent() — rejects any forged request</p>
-        </div>
-      </div>
-      <div class="security-item">
-        <div class="security-dot"></div>
-        <div>
-          <p class="security-label">Rate limiting</p>
-          <p class="security-desc">10 attempts / 15 min on auth routes · 5 messages / hour on contact</p>
-        </div>
-      </div>
-      <div class="security-item">
-        <div class="security-dot"></div>
-        <div>
-          <p class="security-label">Stock integrity</p>
-          <p class="security-desc">Atomic Prisma transaction + optimistic lock prevents overselling</p>
-        </div>
-      </div>
-      <div class="security-item">
-        <div class="security-dot"></div>
-        <div>
-          <p class="security-label">HTTP headers</p>
-          <p class="security-desc">helmet — X-Frame-Options, HSTS, X-Content-Type-Options and more</p>
-        </div>
-      </div>
-      <div class="security-item">
-        <div class="security-dot"></div>
-        <div>
-          <p class="security-label">File uploads</p>
-          <p class="security-desc">MIME type filter + extension allowlist via Multer</p>
+      <div class="collection-card">
+        <div class="collection-placeholder" style="background: linear-gradient(135deg, #d4ccd8, #b8aec0);">👗</div>
+        <div class="collection-info">
+          <p class="collection-category">Robes</p>
+          <p class="collection-name">Robe en coton biologique</p>
+          <p class="collection-price">À partir de 120 €</p>
         </div>
       </div>
     </div>
   </section>
 
-  <hr class="divider" />
+  <!-- STORY -->
+  <div class="story" id="histoire">
+    <div class="story-image">
+      🧵
+    </div>
+    <div class="story-content">
+      <p class="section-tag">Notre histoire</p>
+      <h2>Un atelier, une vision</h2>
+      <p>Rue 25 est née d'une conviction simple : les vêtements méritent d'être faits avec soin, dans le respect des matières et de ceux qui les portent.</p>
+      <p>Chaque pièce de notre collection est pensée pour traverser les saisons, les tendances et le temps. Nous travaillons avec des artisans locaux qui partagent notre exigence du beau travail.</p>
+      <a href="#collections" class="btn">Voir la collection</a>
+    </div>
+  </div>
 
-  <!-- TEAM -->
-  <section>
-    <p class="section-tag">The team</p>
-    <h2>Built in 4 sprints</h2>
-    <p class="section-intro">Two developers, one full-stack project — delivered across 4 sprints at Holberton School.</p>
-    <div class="team-grid">
-      <div class="team-card">
-        <p class="team-role">Speaker 1 — Frontend</p>
-        <p class="team-name">UI & Experience</p>
-        <ul class="team-tasks">
-          <li>Responsive design with Tailwind CSS</li>
-          <li>Product catalog & filtering</li>
-          <li>Cart user experience</li>
-          <li>Customer account pages</li>
-        </ul>
+  <!-- SUR MESURE -->
+  <div class="sur-mesure" id="sur-mesure">
+    <p class="section-tag">Service exclusif</p>
+    <h2>Sur mesure</h2>
+    <p>Vous avez une idée précise ? Nous la réalisons. Décrivez le vêtement de vos rêves, vos mensurations et vos attentes — nous vous envoyons un devis personnalisé.</p>
+    <a href="mailto:contact@rue25.fr" class="btn">Faire une demande</a>
+    <div class="steps">
+      <div class="step">
+        <p class="step-num">01</p>
+        <p class="step-title">Décrivez votre projet</p>
+        <p class="step-desc">Type de vêtement, matières souhaitées, occasion.</p>
       </div>
-      <div class="team-card">
-        <p class="team-role">Speaker 2 — Backend</p>
-        <p class="team-name">API & Infrastructure</p>
-        <ul class="team-tasks">
-          <li>Database schema & Prisma ORM</li>
-          <li>JWT authentication & RBAC</li>
-          <li>Stripe Checkout & webhook</li>
-          <li>Docker setup & security</li>
-        </ul>
+      <div class="step">
+        <p class="step-num">02</p>
+        <p class="step-title">Vos mensurations</p>
+        <p class="step-desc">Tour de poitrine, taille, hanches, hauteur.</p>
+      </div>
+      <div class="step">
+        <p class="step-num">03</p>
+        <p class="step-title">Devis personnalisé</p>
+        <p class="step-desc">Nous vous répondons sous 48h avec une proposition.</p>
+      </div>
+      <div class="step">
+        <p class="step-num">04</p>
+        <p class="step-title">Création & livraison</p>
+        <p class="step-desc">Votre pièce unique confectionnée avec soin.</p>
       </div>
     </div>
-  </section>
+  </div>
 
   <!-- FOOTER -->
-  <footer>
-    <h3>Rue 25</h3>
-    <p>Full-Stack E-Commerce MVP — Holberton School 2026</p>
-    <div class="footer-links">
-      <a href="https://github.com/lucasmettetal/Portfolio-Project" class="btn" target="_blank">GitHub Repository</a>
+  <footer id="contact">
+    <div class="footer-brand">
+      <p class="footer-logo">Rue 25</p>
+      <p>Vêtements artisanaux français, faits à la main avec des matières nobles.</p>
     </div>
-    <p class="footer-meta">React · Node.js · PostgreSQL · Prisma · Stripe · Docker</p>
+    <div class="footer-col">
+      <h4>Boutique</h4>
+      <ul>
+        <li><a href="#collections">Collections</a></li>
+        <li><a href="#sur-mesure">Sur mesure</a></li>
+        <li><a href="#histoire">Notre histoire</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contact</h4>
+      <ul>
+        <li><a href="mailto:contact@rue25.fr">contact@rue25.fr</a></li>
+        <li><a href="https://github.com/lucasmettetal/Portfolio-Project" target="_blank">GitHub du projet</a></li>
+      </ul>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Rue 25 — Tous droits réservés</p>
+      <p>Projet étudiant — Holberton School</p>
+    </div>
   </footer>
 
 </body>
